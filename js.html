@@ -10,11 +10,48 @@ var DEU_INDEX_HREF = '/de/happening-now';
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
 
-var wolfLocalize = {
 
-    getPrimaryNav: function () {
+var WOLF_LOCALIZE_VIEWS = {
+    getPrimaryNavNode: function () {
         return document.querySelector(PRIMARY_NAV_SELECTOR);
     },
+
+    getMobileMenuItemNodes: function () {
+        return Array.from(document.querySelectorAll(
+            MOBILE_MENU_ITEM_SELECTOR
+        ));
+    },
+
+    getDesktopMenuItemNodes: function () {
+        return Array.from(document.querySelectorAll(
+            DESKTOP_MENU_ITEM_SELECTOR
+        ));
+    },
+
+    showOrHideMenuItem: function (menuItem, show) {
+        if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
+    },
+
+
+    updateTitleHREF: function (href) {
+        var el = document.querySelector('.Header-branding');
+        el.href = href
+    },
+
+    getLocaleButtonNode: function () {
+        return document.getElementById(LOCALE_BUTTON_ID);
+    },
+
+    renderLocaleButton: function(innerText, href) {
+        var el = this.getLocaleButtonNode();
+        if (!el) document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
+        el = this.getLocaleButtonNode();
+        el.innerText = innerText;
+        el.href = href;
+    }
+};
+
+var WOLF_LOCALIZE = {
 
     getLocale: function () {
         return document.location.pathname.substring(0, 4);
@@ -24,94 +61,75 @@ var wolfLocalize = {
         return path.replace(document.location.origin, '');
     },
 
-    getDesktopMenuItems: function () {
-        return Array.from(document.querySelectorAll(
-            DESKTOP_MENU_ITEM_SELECTOR
-        ));
-    },
-
-    getMobileMenuItems: function () {
-        return Array.from(document.querySelectorAll(
-            MOBILE_MENU_ITEM_SELECTOR
-        ));
+    doesLocaleExist: function () {
+        const localeExists = LOCALES.some((item) => item === this.getLocale());
+        return localeExists;
     },
 
     doesHREFBelongToLocale: function (href) {
-        const localeExists = LOCALES.some((item) => item === this.getLocale());
-        const locale = localeExists ? this.getLocale() : LOCALES[0];
+        const locale = this.doesLocaleExist() ? this.getLocale() : DEFAULT_LOCALE;
         return this.stripOriginFromPath(href)
             .indexOf(locale) === 0;
     },
 
-    showOrHideMenuItem: function (menuItem, show) {
-        if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
-    },
-
     localizeDesktopMenu: function () {
         var self = this;
-        this.getDesktopMenuItems().map(function (menuItem) {
+        WOLF_LOCALIZE_VIEWS.getDesktopMenuItemNodes()
+        .map(function (menuItem) {
             if (!menuItem) return null
             var show = self.doesHREFBelongToLocale(menuItem.href);
-            return self.showOrHideMenuItem(menuItem.parentNode, show);
+            return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem.parentNode, show);
         });
     },
 
     localizeMobileMenu: function () {
         var self = this;
-        this.getMobileMenuItems().map(function (menuItem) {
+        WOLF_LOCALIZE_VIEWS.getMobileMenuItemNodes().map(function (menuItem) {
             if (menuItem.href && self.doesHREFBelongToLocale(menuItem.href)) {
-                return self.showOrHideMenuItem(menuItem, true);
+                return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem, true);
             }
             var folderHREF = menuItem.getAttribute('data-controller-folder-toggle');
             var folderBelongs = self.doesHREFBelongToLocale('/' + folderHREF);
-            return self.showOrHideMenuItem(menuItem, folderBelongs);
+            return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem, folderBelongs);
         });
-    },
-
-    getLocaleButton: function () {
-        return document.getElementById(LOCALE_BUTTON_ID);
     },
 
     currentLocaleIsGerman: function () {
         return this.getLocale() === '/de/';
     },
 
-    renderLanguageButton: function() {
-        var el = this.getLocaleButton();
-        if (!el) document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
-        el = this.getLocaleButton();
+    localizeLocaleButton: function() {
         if (this.currentLocaleIsGerman()) {
-            el.innerText = 'English';
-            el.href = ENG_INDEX_HREF;
-        } else {
-            el.innerText = 'Deutsch';
-            el.href = DEU_INDEX_HREF;
+            return WOLF_LOCALIZE_VIEWS.renderLocaleButton('English', ENG_INDEX_HREF);
         }
+
+        return WOLF_LOCALIZE_VIEWS.renderLocaleButton('Deutsch', DEU_INDEX_HREF);
     },
 
-    updateTitleHREF: function () {
-        var el = document.querySelector('.Header-branding');
-        el.href = this.currentLocaleIsGerman() ? DEU_INDEX_HREF : ENG_INDEX_HREF;
+    localizeTitleHREF: function() {
+        const href = this.currentLocaleIsGerman() ? DEU_INDEX_HREF : ENG_INDEX_HREF;
+        WOLF_LOCALIZE_VIEWS.updateTitleHREF(href);
     },
 
-    localizeMenus: function () {
+    localizeSite: function () {
         this.localizeDesktopMenu();
         this.localizeMobileMenu();
-        this.renderLanguageButton();
-        this.updateTitleHREF()
+        this.localizeLocaleButton();
+        this.localizeTitleHREF();
     },
 
     bindToNavChanges: function () {
-        var observer = new MutationObserver(this.localizeMenus.bind(this));
-        observer.observe(this.getPrimaryNav(), { attributes: true, childList: true, characterData: true });
+        var observer = new MutationObserver(this.localizeSite.bind(this));
+        observer.observe(WOLF_LOCALIZE_VIEWS.getPrimaryNavNode(), {
+            attributes: true, childList: true, characterData: true
+        });
     },
 
     initialize: function () {
-        this.localizeMenus();
+        this.localizeSite();
         this.bindToNavChanges();
     }
+};
 
-}
-
-wolfLocalize.initialize();
+WOLF_LOCALIZE.initialize();
 </script>
