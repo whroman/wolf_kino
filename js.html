@@ -1,0 +1,113 @@
+<script>
+var LOCALES = ['/en/', '/de/'];
+var DESKTOP_MENU_ITEM_SELECTOR = '.Header-nav-folder-title';
+var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
+var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
+
+var ENG_INDEX_HREF = '/en/happening-now';
+var DEU_INDEX_HREF = '/de/happening-now';
+var LOCALE_BUTTON_ID = 'language-toggle';
+var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
+
+var wolfLocalize = {
+
+    getPrimaryNav: function () {
+        return document.querySelector(PRIMARY_NAV_SELECTOR);
+    },
+
+    getLocale: function () {
+        return document.location.pathname.substring(0, 4);
+    },
+
+    stripOriginFromPath: function (path) {
+        return path.replace(document.location.origin, '');
+    },
+
+    getDesktopMenuItems: function () {
+        return Array.from(document.querySelectorAll(
+            DESKTOP_MENU_ITEM_SELECTOR
+        ));
+    },
+
+    getMobileMenuItems: function () {
+        return Array.from(document.querySelectorAll(
+            MOBILE_MENU_ITEM_SELECTOR
+        ));
+    },
+
+    doesHREFBelongToLocale: function (href) {
+        const localeExists = LOCALES.some((item) => item === this.getLocale());
+        const locale = localeExists ? this.getLocale() : LOCALES[0];
+        return this.stripOriginFromPath(href)
+            .indexOf(locale) === 0;
+    },
+
+    showOrHideMenuItem: function (menuItem, show) {
+        if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
+    },
+
+    localizeDesktopMenu: function () {
+        var self = this;
+        this.getDesktopMenuItems().map(function (menuItem) {
+            if (!menuItem) return null
+            var show = self.doesHREFBelongToLocale(menuItem.href);
+            return self.showOrHideMenuItem(menuItem.parentNode, show);
+        });
+    },
+
+    localizeMobileMenu: function () {
+        var self = this;
+        this.getMobileMenuItems().map(function (menuItem) {
+            if (menuItem.href && self.doesHREFBelongToLocale(menuItem.href)) {
+                return self.showOrHideMenuItem(menuItem, true);
+            }
+            var folderHREF = menuItem.getAttribute('data-controller-folder-toggle');
+            var folderBelongs = self.doesHREFBelongToLocale('/' + folderHREF);
+            return self.showOrHideMenuItem(menuItem, folderBelongs);
+        });
+    },
+
+    getLocaleButton: function () {
+        return document.getElementById(LOCALE_BUTTON_ID);
+    },
+
+    renderLanguageButton: function() {
+        var el = this.getLocaleButton();
+        if (!el) document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
+        el = this.getLocaleButton();
+        if (this.getLocale() === '/de/') {
+            el.innerText = 'English';
+            el.href = ENG_INDEX_HREF;
+        } else {
+            el.innerText = 'Deutsch';
+            el.href = DEU_INDEX_HREF;
+        }
+    },
+
+    updateTitleHREF: function () {
+        var el = document.querySelector('.Header-branding');
+        el.href = this.getLocale() === '/de/' ? DEU_INDEX_HREF : ENG_INDEX_HREF;
+    },
+
+    localizeMenus: function () {
+        this.localizeDesktopMenu();
+        this.localizeMobileMenu();
+        this.renderLanguageButton();
+        this.updateTitleHREF()
+    },
+
+    bindToNavChanges: function () {
+        var observer = new MutationObserver(this.localizeMenus.bind(this));
+        observer.observe(this.getPrimaryNav(), { attributes: true, childList: true, characterData: true });
+    },
+
+    initialize: function () {
+        this.localizeMenus();
+        this.bindToNavChanges();
+    }
+
+}
+
+wolfLocalize.initialize();
+
+</script>
