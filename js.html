@@ -6,7 +6,7 @@ var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
 var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
 
 var ENG_INDEX_HREF = '/en/happening-now';
-var DEU_INDEX_HREF = '/de/happening-now';
+var DEU_INDEX_HREF = '/';
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
 
@@ -95,7 +95,7 @@ var WOLF_LOCALIZE = {
     },
 
     currentLocaleIsGerman: function () {
-        return this.getLocale() === '/de/';
+        return this.getLocale() === '/de/' || this.getLocale() === '/';
     },
 
     localizeLocaleButton: function() {
