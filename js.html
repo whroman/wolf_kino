@@ -1,57 +1,71 @@
 <script>
 var DEFAULT_LOCALE = '/de/'
 var LOCALES = [DEFAULT_LOCALE, '/en/'];
+var ENG_INDEX_HREF = '/en/happening-now';
+var DEU_INDEX_HREF = '/';
+
+var LOCALE_BUTTON_ID = 'language-toggle';
+var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
 var DESKTOP_MENU_ITEM_SELECTOR = '.Header-nav-folder-title';
 var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
 var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
 
-var ENG_INDEX_HREF = '/en/happening-now';
-var DEU_INDEX_HREF = '/';
-var LOCALE_BUTTON_ID = 'language-toggle';
-var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
-
-
-var WOLF_LOCALIZE_VIEWS = {
-    getPrimaryNavNode: function () {
+var WOLF_NODES = {
+    getPrimaryNav: function () {
         return document.querySelector(PRIMARY_NAV_SELECTOR);
     },
 
-    getMobileMenuItemNodes: function () {
-        return Array.from(document.querySelectorAll(
-            MOBILE_MENU_ITEM_SELECTOR
-        ));
+    getNodes: function (selector) {
+        return Array.from(document.querySelectorAll(selector));
     },
 
-    getDesktopMenuItemNodes: function () {
-        return Array.from(document.querySelectorAll(
-            DESKTOP_MENU_ITEM_SELECTOR
-        ));
+    getMobileMenuItems: function () {
+        return this.getNodes(MOBILE_MENU_ITEM_SELECTOR);
     },
+
+    getDesktopMenuItems: function () {
+        return this.getNodes(DESKTOP_MENU_ITEM_SELECTOR);
+    },
+
+    getLocaleButton: function () {
+
+        return document.getElementById(LOCALE_BUTTON_ID);
+    },
+
+    getPageTitle: function () {
+        return document.querySelector('.Header-branding');
+    }
+};
+
+var WOLF_LOCALIZE_VIEWS = {
 
     showOrHideMenuItem: function (menuItem, show) {
         if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
     },
 
-
     updateTitleHREF: function (href) {
-        var el = document.querySelector('.Header-branding');
-        el.href = href
-    },
-
-    getLocaleButtonNode: function () {
-        return document.getElementById(LOCALE_BUTTON_ID);
+        WOLF_NODES.getPageTitle().href = href
     },
 
     renderLocaleButton: function(innerText, href) {
-        var el = this.getLocaleButtonNode();
+        var el = WOLF_NODES.getLocaleButton();
         if (!el) document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
-        el = this.getLocaleButtonNode();
+        el = WOLF_NODES.getLocaleButton();
         el.innerText = innerText;
         el.href = href;
     }
 };
 
-var WOLF_LOCALIZE = {
+var WOLF_MENU_VIEWS = {
+    removeLinksFromMenuItems: function () {
+        WOLF_NODES.getDesktopMenuItems()
+        .forEach(function (item) {
+            item.removeAttribute('href')
+        })
+    }
+};
+
+var WOLF_LOCALIZE_ACTIONS = {
 
     getLocale: function () {
         return document.location.pathname.substring(0, 4);
@@ -74,7 +88,7 @@ var WOLF_LOCALIZE = {
 
     localizeDesktopMenu: function () {
         var self = this;
-        WOLF_LOCALIZE_VIEWS.getDesktopMenuItemNodes()
+        WOLF_NODES.getDesktopMenuItems()
         .map(function (menuItem) {
             if (!menuItem) return null
             var show = self.doesHREFBelongToLocale(menuItem.href);
@@ -84,7 +98,7 @@ var WOLF_LOCALIZE = {
 
     localizeMobileMenu: function () {
         var self = this;
-        WOLF_LOCALIZE_VIEWS.getMobileMenuItemNodes().map(function (menuItem) {
+        WOLF_NODES.getMobileMenuItems().map(function (menuItem) {
             if (menuItem.href && self.doesHREFBelongToLocale(menuItem.href)) {
                 return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem, true);
             }
@@ -120,7 +134,7 @@ var WOLF_LOCALIZE = {
 
     bindToNavChanges: function () {
         var observer = new MutationObserver(this.localizeSite.bind(this));
-        observer.observe(WOLF_LOCALIZE_VIEWS.getPrimaryNavNode(), {
+        observer.observe(WOLF_NODES.getPrimaryNav(), {
             attributes: true, childList: true, characterData: true
         });
     },
@@ -131,5 +145,12 @@ var WOLF_LOCALIZE = {
     }
 };
 
-WOLF_LOCALIZE.initialize();
+var WOLF_APP = {
+    initialize: function () {
+        WOLF_LOCALIZE_ACTIONS.initialize();
+        WOLF_MENU_VIEWS.removeLinksFromMenuItems();
+    }
+};
+
+WOLF_APP.initialize();
 </script>
