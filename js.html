@@ -7,6 +7,7 @@ var DEU_INDEX_HREF = '/';
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
 var DESKTOP_MENU_ITEM_SELECTOR = '.Header-nav-folder-title';
+var DESKTOP_SUB_MENU_ITEM_SELECTOR = '.Header-nav-folder-item';
 var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
 var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
 
@@ -25,6 +26,10 @@ var WOLF_NODES = {
 
     getDesktopMenuItems: function () {
         return this.getNodes(DESKTOP_MENU_ITEM_SELECTOR);
+    },
+
+    getDesktopSubMenuItems: function () {
+        return this.getNodes(DESKTOP_SUB_MENU_ITEM_SELECTOR);
     },
 
     getLocaleButton: function () {
@@ -112,12 +117,34 @@ var WOLF_LOCALIZE_ACTIONS = {
         return this.getLocale() === '/de/' || this.getLocale() === '/';
     },
 
-    localizeLocaleButton: function() {
-        if (this.currentLocaleIsGerman()) {
-            return WOLF_LOCALIZE_VIEWS.renderLocaleButton('English', ENG_INDEX_HREF);
+    getLocaleButtonText: function () {
+        return this.currentLocaleIsGerman() ? 'Englisch' : 'Deutsch' ;
+    },
+
+    getLocaleButtonHREF: function () {
+        var menuHREFs = WOLF_NODES.getDesktopSubMenuItems()
+        .map(function (menuItem) {
+            return WOLF_LOCALIZE_ACTIONS.stripOriginFromPath(menuItem.href);
+        });
+
+        var halvingIndex = menuHREFs.length / 2;
+        var pathnameIndex = menuHREFs.indexOf(window.location.pathname);
+
+        if (pathnameIndex === -1) {
+            return this.currentLocaleIsGerman() ? ENG_INDEX_HREF : DEU_INDEX_HREF;
         }
 
-        return WOLF_LOCALIZE_VIEWS.renderLocaleButton('Deutsch', DEU_INDEX_HREF);
+        var indexOfPageInOtherLocale = pathnameIndex > halvingIndex ?
+            pathnameIndex - halvingIndex :
+            pathnameIndex + halvingIndex;
+
+        return menuHREFs[indexOfPageInOtherLocale];
+    },
+
+    localizeLocaleButton: function () {
+        var text = this.getLocaleButtonText();
+        var href = this.getLocaleButtonHREF();
+        return WOLF_LOCALIZE_VIEWS.renderLocaleButton(text, href);
     },
 
     localizeTitleHREF: function() {
