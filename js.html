@@ -65,6 +65,7 @@ var WOLF_MENU_VIEWS = {
     removeLinksFromMenuItems: function () {
         WOLF_NODES.getDesktopMenuItems()
         .forEach(function (item) {
+            console.log(item)
             item.removeAttribute('href')
         })
     }
@@ -159,23 +160,27 @@ var WOLF_LOCALIZE_ACTIONS = {
         this.localizeTitleHREF();
     },
 
-    bindToNavChanges: function () {
-        var observer = new MutationObserver(this.localizeSite.bind(this));
-        observer.observe(WOLF_NODES.getPrimaryNav(), {
-            attributes: true, childList: true, characterData: true
-        });
-    },
-
     initialize: function () {
         this.localizeSite();
-        this.bindToNavChanges();
     }
 };
 
 var WOLF_APP = {
     initialize: function () {
+        this.bindToNavChanges();
+        this.onSiteChange();
+    },
+
+    onSiteChange: function () {
         WOLF_LOCALIZE_ACTIONS.initialize();
         WOLF_MENU_VIEWS.removeLinksFromMenuItems();
+    },
+
+    bindToNavChanges: function () {
+        var observer = new MutationObserver(this.onSiteChange.bind(this));
+        observer.observe(WOLF_NODES.getPrimaryNav(), {
+            attributes: true, childList: true, characterData: true
+        });
     }
 };
 
