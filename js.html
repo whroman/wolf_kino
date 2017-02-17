@@ -7,6 +7,7 @@ var DEU_INDEX_HREF = '/';
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
 var DESKTOP_MENU_ITEM_SELECTOR = '.Header-nav-folder-title';
+var DESKTOP_MENU_ITEM_FOLDER_SELECTOR = '.Header-nav-item--folder';
 var DESKTOP_SUB_MENU_ITEM_SELECTOR = '.Header-nav-folder-item';
 var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
 var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
@@ -24,8 +25,12 @@ var WOLF_NODES = {
         return this.getNodes(MOBILE_MENU_ITEM_SELECTOR);
     },
 
+    getDesktopMenuFolderItems: function () {
+        return this.getNodes('.Header-nav-folder-title');
+    },
+
     getDesktopMenuItems: function () {
-        return this.getNodes(DESKTOP_MENU_ITEM_SELECTOR);
+        return this.getNodes('.Header-nav-inner > *');
     },
 
     getDesktopSubMenuItems: function () {
@@ -44,7 +49,7 @@ var WOLF_NODES = {
 
 var WOLF_LOCALIZE_VIEWS = {
 
-    showOrHideMenuItem: function (menuItem, show) {
+    showOrHideNode: function (menuItem, show) {
         if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
     },
 
@@ -63,7 +68,7 @@ var WOLF_LOCALIZE_VIEWS = {
 
 var WOLF_MENU_VIEWS = {
     removeLinksFromMenuItems: function () {
-        WOLF_NODES.getDesktopMenuItems()
+        WOLF_NODES.getDesktopMenuFolderItems()
         .forEach(function (item) {
             console.log(item)
             item.removeAttribute('href')
@@ -92,13 +97,24 @@ var WOLF_LOCALIZE_ACTIONS = {
             .indexOf(locale) === 0;
     },
 
+    localizeSingleDesktopMenuItem: function (item, href) {
+        var shouldShow = this.doesHREFBelongToLocale(href);
+        return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
+    },
+
     localizeDesktopMenu: function () {
         var self = this;
         WOLF_NODES.getDesktopMenuItems()
-        .map(function (menuItem) {
-            if (!menuItem) return null
-            var show = self.doesHREFBelongToLocale(menuItem.href);
-            return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem.parentNode, show);
+        .forEach(function(item) {
+            var isFolder = item.className.indexOf('Header-nav-item--folder') > -1
+            if (!isFolder) return self.localizeSingleDesktopMenuItem(item, item.href)
+            var shouldShow = Array
+                .from(item.querySelectorAll(DESKTOP_SUB_MENU_ITEM_SELECTOR))
+                .some(function(subItem) {
+                    return self.doesHREFBelongToLocale(subItem.href)
+                })
+
+            return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
         });
     },
 
@@ -106,11 +122,11 @@ var WOLF_LOCALIZE_ACTIONS = {
         var self = this;
         WOLF_NODES.getMobileMenuItems().map(function (menuItem) {
             if (menuItem.href && self.doesHREFBelongToLocale(menuItem.href)) {
-                return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem, true);
+                return WOLF_LOCALIZE_VIEWS.showOrHideNode(menuItem, true);
             }
             var folderHREF = menuItem.getAttribute('data-controller-folder-toggle');
             var folderBelongs = self.doesHREFBelongToLocale('/' + folderHREF);
-            return WOLF_LOCALIZE_VIEWS.showOrHideMenuItem(menuItem, folderBelongs);
+            return WOLF_LOCALIZE_VIEWS.showOrHideNode(menuItem, folderBelongs);
         });
     },
 
