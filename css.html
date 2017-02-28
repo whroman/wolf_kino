@@ -1,4 +1,15 @@
 <style>
+/* Language Toggle Button */
+#language-toggle {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    font-family: accid;
+    border: 1px solid #000;
+    padding: 0 0.5em;
+}
+
+/* Header */
 .Header-nav-item { display: none; }
 .Header-nav-folder-title { cursor: default; }
 
@@ -8,12 +19,28 @@
     display: inline-block;
 }
 
-#language-toggle {
+.Header-nav-item--folder::after {
     position: absolute;
-    left: 20px;
-    top: 20px;
-    font-family: accid;
-    border: 1px solid #000;
-    padding: 0 0.5em;
+    left: -10px;
+    bottom: 8px;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 7px 10px 0 10px;
+    margin-left: 50%;
+    content: "";
+    width: 0;
+    height: 0;
+}
+
+.Header-nav:hover .Header-nav-item--folder::after {
+    border-top-color: rgba(19,18,16,.4);
+}
+
+.Header-nav:hover .Header-nav-item--folder:hover::after {
+    border-top-color: #131210;
+}
+
+a.Header-nav-item:hover {
+    text-decoration: underline;
 }
 </style>
