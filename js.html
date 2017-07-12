@@ -4,13 +4,16 @@ var LOCALES = [DEFAULT_LOCALE, '/en/'];
 var ENG_INDEX_HREF = '/en/happening-now';
 var DEU_INDEX_HREF = '/';
 
+var NAV_ITEMS_ALWAYS_SHOW = ['blog-collection', 'events-collection']
+
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
-var DESKTOP_MENU_ITEM_SELECTOR = '.Header-nav-folder-title';
+var DESKTOP_MENU_ITEM_SELECTOR = '#topNav a';
 var DESKTOP_MENU_ITEM_FOLDER_SELECTOR = '.Header-nav-item--folder';
-var DESKTOP_SUB_MENU_ITEM_SELECTOR = '.Header-nav-folder-item';
+var DESKTOP_SUB_MENU_ITEM_SELECTOR = '#topNav a';
 var MOBILE_MENU_ITEM_SELECTOR = '.Mobile-overlay-nav-item';
-var PRIMARY_NAV_SELECTOR = '.Header-nav--primary';
+var PRIMARY_NAV_SELECTOR = '#topNav';
+var PAGE_TITLE_SELECTOR = '#lower-logo a'
 
 var WOLF_NODES = {
     getPrimaryNav: function () {
@@ -30,7 +33,7 @@ var WOLF_NODES = {
     },
 
     getDesktopMenuItems: function () {
-        return this.getNodes('.Header-nav-inner > *');
+        return this.getNodes('#topNav li');
     },
 
     getDesktopSubMenuItems: function () {
@@ -43,7 +46,7 @@ var WOLF_NODES = {
     },
 
     getPageTitle: function () {
-        return document.querySelector('.Header-branding');
+        return document.querySelector(PAGE_TITLE_SELECTOR);
     }
 };
 
@@ -97,24 +100,32 @@ var WOLF_LOCALIZE_ACTIONS = {
             .indexOf(locale) === 0;
     },
 
-    localizeSingleDesktopMenuItem: function (item, href) {
-        var shouldShow = this.doesHREFBelongToLocale(href);
+    localizeSingleDesktopMenuItem: function (item) {
+        var aTag = item.querySelector("a")
+        var hrefBelongsToLocale = this.doesHREFBelongToLocale(aTag.href);
+        var isThisAnException = NAV_ITEMS_ALWAYS_SHOW.indexOf(item.className) !== -1
+        var shouldShow = hrefBelongsToLocale || isThisAnException
         return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
     },
 
     localizeDesktopMenu: function () {
         var self = this;
+        console.log(WOLF_NODES.getDesktopMenuItems())
         WOLF_NODES.getDesktopMenuItems()
         .forEach(function(item) {
-            var isFolder = item.className.indexOf('Header-nav-item--folder') > -1
-            if (!isFolder) return self.localizeSingleDesktopMenuItem(item, item.href)
-            var shouldShow = Array
-                .from(item.querySelectorAll(DESKTOP_SUB_MENU_ITEM_SELECTOR))
-                .some(function(subItem) {
-                    return self.doesHREFBelongToLocale(subItem.href)
-                })
+            var isFolder = item.className.indexOf('folder') > -1
+            console.log(item)
+            if (!isFolder) return self.localizeSingleDesktopMenuItem(item)
+            // var shouldShow = Array
+            //     .from(item.querySelectorAll('a'))
+            //     .some(function(subItem) {
+            //         console.log(su'b)
+            //         return self.doesHREFBelongToLocale(subItem.href)
+            //     })
 
-            return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
+            // console.log(shouldShow)
+
+            // return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
         });
     },
 
@@ -194,6 +205,7 @@ var WOLF_APP = {
 
     bindToNavChanges: function () {
         var observer = new MutationObserver(this.onSiteChange.bind(this));
+        console.log(WOLF_NODES.getPrimaryNav())
         observer.observe(WOLF_NODES.getPrimaryNav(), {
             attributes: true, childList: true, characterData: true
         });
