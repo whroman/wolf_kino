@@ -1,10 +1,17 @@
 <script>
+// EU Cookie Statement
+Static.EU_COOKIE_POLICY = "bottom-left";
+Static.EU_COOKIE_TEXT = 'At Wolf we use cookies to help us provide the best service possible. By continuing to use the site, you agree to our cookie policy.';
+Static.EU_COOKIE_BUTTON_LABEL = 'Continue';
+
+// Localization
 var GERMAN_LOCALE = '/de/';
 var ENGLISH_LOCALE = '/en/';
 var DEFAULT_LOCALE = GERMAN_LOCALE;
 var LOCALES = [GERMAN_LOCALE, ENGLISH_LOCALE];
 var ENG_INDEX_HREF = '/en/happening-now/';
 var DEU_INDEX_HREF = '/';
+var EVENTS_PATH = '/events/'
 
 var NAV_ITEMS_ALWAYS_SHOW = ['programm', 'events-collection']
 
@@ -43,8 +50,10 @@ var WOLF_NODES = {
     },
 
     getLocaleButton: function () {
-
-        return document.getElementById(LOCALE_BUTTON_ID);
+        var el = document.getElementById(LOCALE_BUTTON_ID);
+        if (el) return el
+        document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
+        return this.getLocaleButton();
     },
 
     getPageTitle: function () {
@@ -54,8 +63,8 @@ var WOLF_NODES = {
 
 var WOLF_LOCALIZE_VIEWS = {
 
-    showOrHideNode: function (menuItem, show) {
-        if (menuItem) menuItem.style.display = show ? 'inline-block' : 'none';
+    showOrHideNode: function (node, show) {
+        if (node) node.style.display = show ? 'inline-block' : 'none';
     },
 
     updateTitleHREF: function (href) {
@@ -64,10 +73,12 @@ var WOLF_LOCALIZE_VIEWS = {
 
     renderLocaleButton: function(innerText, href) {
         var el = WOLF_NODES.getLocaleButton();
-        if (!el) document.body.insertAdjacentHTML('afterbegin', LOCALE_BUTTON);
-        el = WOLF_NODES.getLocaleButton();
         el.innerText = innerText;
         el.href = href;
+
+        if (href.indexOf(EVENTS_PATH) === 0) {
+            this.showOrHideNode(el, false);
+        }
     }
 };
 
@@ -88,7 +99,7 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     getOppositeLocale: function () {
-        return this.getLocale() === GERMAN_LOCALE ? ENGLISH_LOCALE : GERMAN_LOCALE; 
+        return this.getLocale() === GERMAN_LOCALE ? ENGLISH_LOCALE : GERMAN_LOCALE;
     },
 
     getPathWithoutOrigin: function (path) {
@@ -96,16 +107,17 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     doesLocaleExist: function () {
-        var localeExists = LOCALES.some(function(item) { return item === this.getLocale() });
+        var localeExists = LOCALES.some(function(item) { return item === this.getLocale() }.bind(this));
         return localeExists;
     },
 
     doesHREFBelongToLocale: function (href) {
+        var self = this;
         var path = this.getPathWithoutOrigin(href)
 
         var exceptions = [
-            function() { return path === DEU_INDEX_HREF && this.currentLocaleIsGerman() },
-            function() { return path === '/events/' },
+            function() { return path === DEU_INDEX_HREF && this.currentLocaleIsGerman() }.bind(this),
+            function() { return path === EVENTS_PATH },
         ]
 
         var isException = exceptions.some(function(fn) { return fn() })
@@ -171,11 +183,16 @@ var WOLF_LOCALIZE_ACTIONS = {
         WOLF_LOCALIZE_VIEWS.updateTitleHREF(href);
     },
 
+    showMenu: function() {
+        document.getElementById('topNav').style.display = 'block';
+    },
+
     localizeSite: function () {
         this.localizeDesktopMenu();
         this.localizeMobileMenu();
         this.localizeLocaleButton();
         this.localizeTitleHREF();
+        this.showMenu();
     },
 
     initialize: function () {
