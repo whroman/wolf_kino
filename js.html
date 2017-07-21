@@ -1,10 +1,12 @@
 <script>
-var DEFAULT_LOCALE = '/de/'
-var LOCALES = [DEFAULT_LOCALE, '/en/'];
-var ENG_INDEX_HREF = '/en/happening-now';
+var GERMAN_LOCALE = '/de/';
+var ENGLISH_LOCALE = '/en/';
+var DEFAULT_LOCALE = GERMAN_LOCALE;
+var LOCALES = [GERMAN_LOCALE, ENGLISH_LOCALE];
+var ENG_INDEX_HREF = '/en/happening-now/';
 var DEU_INDEX_HREF = '/';
 
-var NAV_ITEMS_ALWAYS_SHOW = ['blog-collection', 'events-collection']
+var NAV_ITEMS_ALWAYS_SHOW = ['programm', 'events-collection']
 
 var LOCALE_BUTTON_ID = 'language-toggle';
 var LOCALE_BUTTON = '<a id="' + LOCALE_BUTTON_ID + '"></a>';
@@ -73,7 +75,6 @@ var WOLF_MENU_VIEWS = {
     removeLinksFromMenuItems: function () {
         WOLF_NODES.getDesktopMenuFolderItems()
         .forEach(function (item) {
-            console.log(item)
             item.removeAttribute('href')
         })
     }
@@ -82,50 +83,54 @@ var WOLF_MENU_VIEWS = {
 var WOLF_LOCALIZE_ACTIONS = {
 
     getLocale: function () {
-        return document.location.pathname.substring(0, 4);
+        var possibleLocale = document.location.pathname.substring(0, 4);
+        return LOCALES.includes(possibleLocale) ? possibleLocale : DEFAULT_LOCALE;
     },
 
-    stripOriginFromPath: function (path) {
+    getOppositeLocale: function () {
+        return this.getLocale() === GERMAN_LOCALE ? ENGLISH_LOCALE : GERMAN_LOCALE; 
+    },
+
+    getPathWithoutOrigin: function (path) {
         return path.replace(document.location.origin, '');
     },
 
     doesLocaleExist: function () {
-        const localeExists = LOCALES.some((item) => item === this.getLocale());
+        var localeExists = LOCALES.some(function(item) { return item === this.getLocale() });
         return localeExists;
     },
 
     doesHREFBelongToLocale: function (href) {
-        const locale = this.doesLocaleExist() ? this.getLocale() : DEFAULT_LOCALE;
-        return this.stripOriginFromPath(href)
-            .indexOf(locale) === 0;
+        var path = this.getPathWithoutOrigin(href)
+
+        var exceptions = [
+            function() { return path === DEU_INDEX_HREF && this.currentLocaleIsGerman() },
+            function() { return path === '/events/' },
+        ]
+
+        var isException = exceptions.some(function(fn) { return fn() })
+        return isException || path.indexOf(this.getLocale()) === 0;
     },
 
     localizeSingleDesktopMenuItem: function (item) {
-        var aTag = item.querySelector("a")
-        var hrefBelongsToLocale = this.doesHREFBelongToLocale(aTag.href);
+        var hrefBelongsToLocale = this.doesHREFBelongToLocale(item.children[0].href);
         var isThisAnException = NAV_ITEMS_ALWAYS_SHOW.indexOf(item.className) !== -1
-        var shouldShow = hrefBelongsToLocale || isThisAnException
+        var shouldShow = hrefBelongsToLocale
         return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
     },
 
     localizeDesktopMenu: function () {
         var self = this;
-        console.log(WOLF_NODES.getDesktopMenuItems())
         WOLF_NODES.getDesktopMenuItems()
         .forEach(function(item) {
-            var isFolder = item.className.indexOf('folder') > -1
-            console.log(item)
+            var isFolder = item.className.indexOf('folder-collection') > -1
             if (!isFolder) return self.localizeSingleDesktopMenuItem(item)
-            // var shouldShow = Array
-            //     .from(item.querySelectorAll('a'))
-            //     .some(function(subItem) {
-            //         console.log(su'b)
-            //         return self.doesHREFBelongToLocale(subItem.href)
-            //     })
-
-            // console.log(shouldShow)
-
-            // return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
+            var shouldShow = Array
+                .from(item.querySelectorAll('.subnav a'))
+                .some(function(subItem) {
+                    return self.doesHREFBelongToLocale(subItem.href)
+                })
+            return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
         });
     },
 
@@ -142,7 +147,7 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     currentLocaleIsGerman: function () {
-        return this.getLocale() === '/de/' || this.getLocale() === '/';
+        return this.getLocale() === GERMAN_LOCALE;
     },
 
     getLocaleButtonText: function () {
@@ -150,23 +155,9 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     getLocaleButtonHREF: function () {
-        var menuHREFs = WOLF_NODES.getDesktopSubMenuItems()
-        .map(function (menuItem) {
-            return WOLF_LOCALIZE_ACTIONS.stripOriginFromPath(menuItem.href);
-        });
-
-        var halvingIndex = menuHREFs.length / 2;
-        var pathnameIndex = menuHREFs.indexOf(window.location.pathname);
-
-        if (pathnameIndex === -1) {
-            return this.currentLocaleIsGerman() ? ENG_INDEX_HREF : DEU_INDEX_HREF;
-        }
-
-        var indexOfPageInOtherLocale = pathnameIndex > halvingIndex ?
-            pathnameIndex - halvingIndex :
-            pathnameIndex + halvingIndex;
-
-        return menuHREFs[indexOfPageInOtherLocale];
+        if (window.location.pathname === ENG_INDEX_HREF) return DEU_INDEX_HREF
+        if (window.location.pathname === DEU_INDEX_HREF) return ENG_INDEX_HREF
+        return window.location.pathname.replace(this.getLocale(), this.getOppositeLocale())
     },
 
     localizeLocaleButton: function () {
@@ -176,7 +167,7 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     localizeTitleHREF: function() {
-        const href = this.currentLocaleIsGerman() ? DEU_INDEX_HREF : ENG_INDEX_HREF;
+        var href = this.currentLocaleIsGerman() ? DEU_INDEX_HREF : ENG_INDEX_HREF;
         WOLF_LOCALIZE_VIEWS.updateTitleHREF(href);
     },
 
@@ -205,7 +196,6 @@ var WOLF_APP = {
 
     bindToNavChanges: function () {
         var observer = new MutationObserver(this.onSiteChange.bind(this));
-        console.log(WOLF_NODES.getPrimaryNav())
         observer.observe(WOLF_NODES.getPrimaryNav(), {
             attributes: true, childList: true, characterData: true
         });
@@ -213,4 +203,319 @@ var WOLF_APP = {
 };
 
 WOLF_APP.initialize();
+
+
+// POLYFILLS
+// Production steps of ECMA-262, Edition 5, 15.4.4.17
+// Reference: http://es5.github.io/#x15.4.4.17
+if (!Array.prototype.some) {
+  Array.prototype.some = function(fun/*, thisArg*/) {
+    'use strict';
+
+    if (this == null) {
+      throw new TypeError('Array.prototype.some called on null or undefined');
+    }
+
+    if (typeof fun !== 'function') {
+      throw new TypeError();
+    }
+
+    var t = Object(this);
+    var len = t.length >>> 0;
+
+    var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+    for (var i = 0; i < len; i++) {
+      if (i in t && fun.call(thisArg, t[i], i, t)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+}
+
+// https://tc39.github.io/ecma262/#sec-array.prototype.includes
+if (!Array.prototype.includes) {
+  Object.defineProperty(Array.prototype, 'includes', {
+    value: function(searchElement, fromIndex) {
+
+      // 1. Let O be ? ToObject(this value).
+      if (this == null) {
+        throw new TypeError('"this" is null or not defined');
+      }
+
+      var o = Object(this);
+
+      // 2. Let len be ? ToLength(? Get(O, "length")).
+      var len = o.length >>> 0;
+
+      // 3. If len is 0, return false.
+      if (len === 0) {
+        return false;
+      }
+
+      // 4. Let n be ? ToInteger(fromIndex).
+      //    (If fromIndex is undefined, this step produces the value 0.)
+      var n = fromIndex | 0;
+
+      // 5. If n ≥ 0, then
+      //  a. Let k be n.
+      // 6. Else n < 0,
+      //  a. Let k be len + n.
+      //  b. If k < 0, let k be 0.
+      var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+
+      function sameValueZero(x, y) {
+        return x === y || (typeof x === 'number' && typeof y === 'number' && isNaN(x) && isNaN(y));
+      }
+
+      // 7. Repeat, while k < len
+      while (k < len) {
+        // a. Let elementK be the result of ? Get(O, ! ToString(k)).
+        // b. If SameValueZero(searchElement, elementK) is true, return true.
+        // c. Increase k by 1. 
+        if (sameValueZero(o[k], searchElement)) {
+          return true;
+        }
+        k++;
+      }
+
+      // 8. Return false
+      return false;
+    }
+  });
+}
+
+// Production steps of ECMA-262, Edition 5, 15.4.4.18
+// Reference: http://es5.github.io/#x15.4.4.18
+if (!Array.prototype.forEach) {
+
+  Array.prototype.forEach = function(callback/*, thisArg*/) {
+
+    var T, k;
+
+    if (this == null) {
+      throw new TypeError('this is null or not defined');
+    }
+
+    // 1. Let O be the result of calling toObject() passing the
+    // |this| value as the argument.
+    var O = Object(this);
+
+    // 2. Let lenValue be the result of calling the Get() internal
+    // method of O with the argument "length".
+    // 3. Let len be toUint32(lenValue).
+    var len = O.length >>> 0;
+
+    // 4. If isCallable(callback) is false, throw a TypeError exception. 
+    // See: http://es5.github.com/#x9.11
+    if (typeof callback !== 'function') {
+      throw new TypeError(callback + ' is not a function');
+    }
+
+    // 5. If thisArg was supplied, let T be thisArg; else let
+    // T be undefined.
+    if (arguments.length > 1) {
+      T = arguments[1];
+    }
+
+    // 6. Let k be 0.
+    k = 0;
+
+    // 7. Repeat while k < len.
+    while (k < len) {
+
+      var kValue;
+
+      // a. Let Pk be ToString(k).
+      //    This is implicit for LHS operands of the in operator.
+      // b. Let kPresent be the result of calling the HasProperty
+      //    internal method of O with argument Pk.
+      //    This step can be combined with c.
+      // c. If kPresent is true, then
+      if (k in O) {
+
+        // i. Let kValue be the result of calling the Get internal
+        // method of O with argument Pk.
+        kValue = O[k];
+
+        // ii. Call the Call internal method of callback with T as
+        // the this value and argument list containing kValue, k, and O.
+        callback.call(T, kValue, k, O);
+      }
+      // d. Increase k by 1.
+      k++;
+    }
+    // 8. return undefined.
+  };
+}
+
+// Production steps of ECMA-262, Edition 6, 22.1.2.1
+if (!Array.from) {
+  Array.from = (function () {
+    var toStr = Object.prototype.toString;
+    var isCallable = function (fn) {
+      return typeof fn === 'function' || toStr.call(fn) === '[object Function]';
+    };
+    var toInteger = function (value) {
+      var number = Number(value);
+      if (isNaN(number)) { return 0; }
+      if (number === 0 || !isFinite(number)) { return number; }
+      return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
+    };
+    var maxSafeInteger = Math.pow(2, 53) - 1;
+    var toLength = function (value) {
+      var len = toInteger(value);
+      return Math.min(Math.max(len, 0), maxSafeInteger);
+    };
+
+    // The length property of the from method is 1.
+    return function from(arrayLike/*, mapFn, thisArg */) {
+      // 1. Let C be the this value.
+      var C = this;
+
+      // 2. Let items be ToObject(arrayLike).
+      var items = Object(arrayLike);
+
+      // 3. ReturnIfAbrupt(items).
+      if (arrayLike == null) {
+        throw new TypeError('Array.from requires an array-like object - not null or undefined');
+      }
+
+      // 4. If mapfn is undefined, then let mapping be false.
+      var mapFn = arguments.length > 1 ? arguments[1] : void undefined;
+      var T;
+      if (typeof mapFn !== 'undefined') {
+        // 5. else
+        // 5. a If IsCallable(mapfn) is false, throw a TypeError exception.
+        if (!isCallable(mapFn)) {
+          throw new TypeError('Array.from: when provided, the second argument must be a function');
+        }
+
+        // 5. b. If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (arguments.length > 2) {
+          T = arguments[2];
+        }
+      }
+
+      // 10. Let lenValue be Get(items, "length").
+      // 11. Let len be ToLength(lenValue).
+      var len = toLength(items.length);
+
+      // 13. If IsConstructor(C) is true, then
+      // 13. a. Let A be the result of calling the [[Construct]] internal method 
+      // of C with an argument list containing the single item len.
+      // 14. a. Else, Let A be ArrayCreate(len).
+      var A = isCallable(C) ? Object(new C(len)) : new Array(len);
+
+      // 16. Let k be 0.
+      var k = 0;
+      // 17. Repeat, while k < len… (also steps a - h)
+      var kValue;
+      while (k < len) {
+        kValue = items[k];
+        if (mapFn) {
+          A[k] = typeof T === 'undefined' ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
+        } else {
+          A[k] = kValue;
+        }
+        k += 1;
+      }
+      // 18. Let putStatus be Put(A, "length", len, true).
+      A.length = len;
+      // 20. Return A.
+      return A;
+    };
+  }());
+}
+
+// Production steps of ECMA-262, Edition 5, 15.4.4.19
+// Reference: http://es5.github.io/#x15.4.4.19
+if (!Array.prototype.map) {
+
+  Array.prototype.map = function(callback/*, thisArg*/) {
+
+    var T, A, k;
+
+    if (this == null) {
+      throw new TypeError('this is null or not defined');
+    }
+
+    // 1. Let O be the result of calling ToObject passing the |this| 
+    //    value as the argument.
+    var O = Object(this);
+
+    // 2. Let lenValue be the result of calling the Get internal 
+    //    method of O with the argument "length".
+    // 3. Let len be ToUint32(lenValue).
+    var len = O.length >>> 0;
+
+    // 4. If IsCallable(callback) is false, throw a TypeError exception.
+    // See: http://es5.github.com/#x9.11
+    if (typeof callback !== 'function') {
+      throw new TypeError(callback + ' is not a function');
+    }
+
+    // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+    if (arguments.length > 1) {
+      T = arguments[1];
+    }
+
+    // 6. Let A be a new array created as if by the expression new Array(len) 
+    //    where Array is the standard built-in constructor with that name and 
+    //    len is the value of len.
+    A = new Array(len);
+
+    // 7. Let k be 0
+    k = 0;
+
+    // 8. Repeat, while k < len
+    while (k < len) {
+
+      var kValue, mappedValue;
+
+      // a. Let Pk be ToString(k).
+      //   This is implicit for LHS operands of the in operator
+      // b. Let kPresent be the result of calling the HasProperty internal 
+      //    method of O with argument Pk.
+      //   This step can be combined with c
+      // c. If kPresent is true, then
+      if (k in O) {
+
+        // i. Let kValue be the result of calling the Get internal 
+        //    method of O with argument Pk.
+        kValue = O[k];
+
+        // ii. Let mappedValue be the result of calling the Call internal 
+        //     method of callback with T as the this value and argument 
+        //     list containing kValue, k, and O.
+        mappedValue = callback.call(T, kValue, k, O);
+
+        // iii. Call the DefineOwnProperty internal method of A with arguments
+        // Pk, Property Descriptor
+        // { Value: mappedValue,
+        //   Writable: true,
+        //   Enumerable: true,
+        //   Configurable: true },
+        // and false.
+
+        // In browsers that support Object.defineProperty, use the following:
+        // Object.defineProperty(A, k, {
+        //   value: mappedValue,
+        //   writable: true,
+        //   enumerable: true,
+        //   configurable: true
+        // });
+
+        // For best browser support, use the following:
+        A[k] = mappedValue;
+      }
+      // d. Increase k by 1.
+      k++;
+    }
+
+    // 9. return A
+    return A;
+  };
+}
 </script>
