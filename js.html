@@ -1,8 +1,9 @@
 <script>
 // EU Cookie Statement
-Static.EU_COOKIE_POLICY = "bottom-left";
-Static.EU_COOKIE_TEXT = 'At Wolf we use cookies to help us provide the best service possible. By continuing to use the site, you agree to our cookie policy.';
-Static.EU_COOKIE_BUTTON_LABEL = 'Continue';
+window.Static = window.Static || {};
+window.Static.EU_COOKIE_POLICY = "bottom-left";
+window.Static.EU_COOKIE_TEXT = 'At Wolf we use cookies to help us provide the best service possible. By continuing to use the site, you agree to our cookie policy.';
+window.Static.EU_COOKIE_BUTTON_LABEL = 'Continue';
 
 // Localization
 var GERMAN_LOCALE = '/de/';
@@ -68,7 +69,9 @@ var WOLF_LOCALIZE_VIEWS = {
     },
 
     updateTitleHREF: function (href) {
-        WOLF_NODES.getPageTitle().href = href
+        var pageTitle = WOLF_NODES.getPageTitle();
+        if (!pageTitle) return;
+        pageTitle.href = href;
     },
 
     renderLocaleButton: function(innerText, href) {
@@ -86,8 +89,8 @@ var WOLF_MENU_VIEWS = {
     removeLinksFromMenuItems: function () {
         WOLF_NODES.getDesktopMenuFolderItems()
         .forEach(function (item) {
-            item.removeAttribute('href')
-        })
+            item.removeAttribute('href');
+        });
     }
 };
 
@@ -113,21 +116,21 @@ var WOLF_LOCALIZE_ACTIONS = {
 
     doesHREFBelongToLocale: function (href) {
         var self = this;
-        var path = this.getPathWithoutOrigin(href)
+        var path = this.getPathWithoutOrigin(href);
 
         var exceptions = [
-            function() { return path === DEU_INDEX_HREF && this.currentLocaleIsGerman() }.bind(this),
+            function() { return path === DEU_INDEX_HREF && self.currentLocaleIsGerman() },
             function() { return path === EVENTS_PATH },
-        ]
+        ];
 
-        var isException = exceptions.some(function(fn) { return fn() })
+        var isException = exceptions.some(function(fn) { return fn(); });
         return isException || path.indexOf(this.getLocale()) === 0;
     },
 
     localizeSingleDesktopMenuItem: function (item) {
         var hrefBelongsToLocale = this.doesHREFBelongToLocale(item.children[0].href);
-        var isThisAnException = NAV_ITEMS_ALWAYS_SHOW.indexOf(item.className) !== -1
-        var shouldShow = hrefBelongsToLocale
+        var isThisAnException = NAV_ITEMS_ALWAYS_SHOW.indexOf(item.className) !== -1;
+        var shouldShow = hrefBelongsToLocale || isThisAnException;
         return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
     },
 
@@ -135,13 +138,13 @@ var WOLF_LOCALIZE_ACTIONS = {
         var self = this;
         WOLF_NODES.getDesktopMenuItems()
         .forEach(function(item) {
-            var isFolder = item.className.indexOf('folder-collection') > -1
-            if (!isFolder) return self.localizeSingleDesktopMenuItem(item)
+            var isFolder = item.className.indexOf('folder-collection') > -1;
+            if (!isFolder) return self.localizeSingleDesktopMenuItem(item);
             var shouldShow = Array
                 .from(item.querySelectorAll('.subnav a'))
                 .some(function(subItem) {
-                    return self.doesHREFBelongToLocale(subItem.href)
-                })
+                    return self.doesHREFBelongToLocale(subItem.href);
+                });
             return WOLF_LOCALIZE_VIEWS.showOrHideNode(item, shouldShow);
         });
     },
@@ -163,13 +166,13 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     getLocaleButtonText: function () {
-        return this.currentLocaleIsGerman() ? 'English' : 'Deutsch' ;
+        return this.currentLocaleIsGerman() ? 'English' : 'Deutsch';
     },
 
     getLocaleButtonHREF: function () {
-        if (window.location.pathname === ENG_INDEX_HREF) return DEU_INDEX_HREF
-        if (window.location.pathname === DEU_INDEX_HREF) return ENG_INDEX_HREF
-        return window.location.pathname.replace(this.getLocale(), this.getOppositeLocale())
+        if (window.location.pathname === ENG_INDEX_HREF) return DEU_INDEX_HREF;
+        if (window.location.pathname === DEU_INDEX_HREF) return ENG_INDEX_HREF;
+        return window.location.pathname.replace(this.getLocale(), this.getOppositeLocale());
     },
 
     localizeLocaleButton: function () {
@@ -184,7 +187,8 @@ var WOLF_LOCALIZE_ACTIONS = {
     },
 
     showMenu: function() {
-        document.getElementById('topNav').style.display = 'block';
+        var topNav = document.getElementById('topNav');
+        if (Boolean(topNav)) topNav.style.display = 'block';
     },
 
     localizeSite: function () {
@@ -212,14 +216,20 @@ var WOLF_APP = {
     },
 
     bindToNavChanges: function () {
-        var observer = new MutationObserver(this.onSiteChange.bind(this));
-        observer.observe(WOLF_NODES.getPrimaryNav(), {
-            attributes: true, childList: true, characterData: true
+        var self = this;
+        var observer = new MutationObserver(function() {
+            self.onSiteChange();
+        });
+        var primaryNav = WOLF_NODES.getPrimaryNav()
+        if (Boolean(primaryNav)) observer.observe(primaryNav, {
+          childList: true, characterData: true
         });
     }
 };
 
-WOLF_APP.initialize();
+window.onload = function() {
+  WOLF_APP.initialize();
+};
 
 
 // POLYFILLS
